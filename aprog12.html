@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - geometry - cube</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				margin: 0px;
+				background-color: #000000;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+	<body>
+
+		<script src="three.js/build/three.js"></script>
+		<script src="js/controls/OrbitControls.js"></script>
+		<script src="js/libs/dat.gui.min.js"></script>
+
+		<script>
+			"use strict";
+			var controls;
+			var camera, scene, renderer;
+			var mesh;
+			var key = [false, false, false, false];
+			var momentumX = 0, momentumY = 0, momentumZ = 0;
+			var ballx = 0,bally = 0, ballz = 0;
+			init();
+			animate();
+
+			function init() {
+
+				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 5000 );
+				camera.position.z = 800;
+				camera.position.y = 800;
+				camera.lookAt(0,0,0);
+
+				scene = new THREE.Scene();
+				// add a ground plane
+				var geometry = new THREE.PlaneGeometry( 1000, 1000 );
+				var texture = new THREE.TextureLoader().load( 'UV_Grid_Sm.jpg' );
+				var material = new THREE.MeshBasicMaterial( {map: texture, side: THREE.DoubleSide} );
+				var plane = new THREE.Mesh( geometry, material );
+				plane.rotation.x = -Math.PI/2;
+				plane.position.y = -100.01;
+				//plane.rotation.z = Math.PI;
+				scene.add( plane );
+
+				// add XYZ axes, in RGB colors
+				scene.add( new THREE.AxisHelper( 200 ) );
+
+				//var texture = new THREE.TextureLoader().load( 'textures/crate.gif' );
+				// let's something other than the crate.gif
+				
+				//var geometry = new THREE.BoxBufferGeometry( 200, 200, 200 );
+				// let's use a sphere instead of a box
+				var geometry = new THREE.SphereGeometry( 100, 64, 64 );
+
+				// material = new THREE.MeshBasicMaterial( { map: texture } );
+				// to have the lights affect the material, use Phong instead of Basic
+				material = new THREE.MeshBasicMaterial( { map: texture } );
+
+				mesh = new THREE.Mesh( geometry, material );
+				scene.add( mesh );
+
+				renderer = new THREE.WebGLRenderer();
+
+				// set the background color to gray
+				renderer.setClearColor( 0xa0a0a0 );
+
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				document.body.appendChild( renderer.domElement );
+
+				// let's have the mouse affect the view
+				controls = new THREE.OrbitControls( camera, renderer.domElement );
+				controls.enableKeys = false;
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+				window.addEventListener("keydown", keyDown, false);
+				window.addEventListener("keyup", keyUp, false);
+
+				// add some sliders
+				//params = {intensity: 1};				
+				//var gui = new dat.GUI();
+
+				//gui.add( params, 'intensity', 0, 2 );
+				//gui.open();
+
+			}
+			
+			function keyDown(e){
+				console.log(e.key, e.keyCode);
+				if (e.keyCode >= 37 && e.keyCode <= 40){
+					key[e.keyCode - 37] = true;
+				}
+				if (e.keyCode == 32){
+					if (mesh.position.y == 0){
+						momentumY = 10;
+					}
+				}
+			}
+			function keyUp(e){
+				console.log(e.key, e.keyCode);
+				if (e.keyCode >= 37 && e.keyCode <= 40){
+					key[e.keyCode - 37] = false;
+				}
+			}
+			
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+			
+			
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				// auto-rotation at start - turn it off
+				//mesh.rotation.x += 0.005;
+				//mesh.rotation.y += 0.01;
+				/*
+				var quaternion = new THREE.Quaternion();
+				quaternion.setFromAxisAngle( new THREE.Vector3( 0, 1, 0 ), 0.01);
+
+				var vector = new THREE.Vector3( 0, 1, 0 );
+				vector.applyQuaternion( quaternion );*/
+				
+				if (key[0]){
+					//mesh.rotateOnWorldAxis(new THREE.Vector3(0, 0, 1),0.01);
+					//mesh.quaternion.slerp(new THREE.Quaternion().set( 0, 0, 1, 0 ).normalize(),0.01);
+					momentumX -= 0.3;
+				}
+				if (key[1]){
+					//mesh.quaternion.slerp(new THREE.Quaternion().set( 0, 0, 0, 1 ).normalize(),0.01);
+					momentumZ -= 0.3;
+				}
+				if (key[2]){
+					//mesh.quaternion.slerp(new THREE.Quaternion().set( 0, 1, 0, 0 ).normalize(),0.01);
+					momentumX += 0.3;
+				}
+				if (key[3]){
+					//mesh.quaternion.slerp(new THREE.Quaternion().set( 0, -1, 0, 0 ).normalize(),0.01);
+					momentumZ += 0.3;
+				}
+				
+				if (momentumX * momentumX > 100){
+					momentumX = 10 * (momentumX > 0 ? 1 : -1);
+				}
+				if (momentumZ * momentumZ > 100){
+					momentumZ = 10 * (momentumZ > 0 ? 1 : -1);
+				}
+				//mesh.position.x += momentumX;
+				//mesh.position.z += momentumZ;
+				momentumY += -0.2;
+				
+				ballx += momentumX;
+				bally += momentumY;
+				ballz += momentumZ;
+				
+				mesh.position.x = 0;
+				mesh.position.y = 0;
+				mesh.position.z = 0;
+				/*
+				var rotation = new THREE.Matrix4().makeRotationZ(-momentumX/50);
+				var translation = new THREE.Matrix4().makeTranslation(0, 0, 0);
+				var transformation = rotation.multiply(translation);
+				mesh.applyMatrix(transformation);*/
+				mesh.applyMatrix(new THREE.Matrix4().makeRotationZ(-momentumX/50));
+				/*
+				rotation = new THREE.Matrix4().makeRotationX(momentumZ/50);
+				translation = new THREE.Matrix4().makeTranslation(0, 0, 0);
+				transformation = rotation.multiply(translation);
+				//transformation = translation.multiply(rotation);
+				mesh.applyMatrix(transformation);*/
+				mesh.applyMatrix(new THREE.Matrix4().makeRotationX(momentumZ/50));
+				
+				//mesh.makeRotationX(momentumZ/50);
+				//mesh.makeRotationZ(momentumX/50);
+				
+				
+				
+				if (momentumX * momentumX < 0.04){
+					momentumX = 0;
+				}
+				else if (!key[0] && !key[2]) {
+					momentumX += 0.3*(momentumX > 0 ? -1 : 1);
+				}
+				
+				if (momentumZ * momentumZ < 0.04){
+					momentumZ = 0;
+				}
+				else if (!key[1] && !key[3]) {
+					momentumZ += 0.3*(momentumZ > 0 ? -1 : 1);
+				}
+				
+				if (ballx * ballx > 250000){
+					ballx = 500*(ballx > 0 ? 1 : -1);
+				}
+				if (ballz * ballz > 250000){
+					ballz = 500*(ballz > 0 ? 1 : -1);
+				}
+				
+				if (bally < 0 ){
+					bally = 0;
+				}
+				
+				mesh.position.x = ballx;
+				mesh.position.y = bally;
+				mesh.position.z = ballz;
+				
+				// have our slider for intensity affect the lighting
+				//light.intensity = light2.intensity = light3.intensity = params.intensity;
+
+				renderer.render( scene, camera );
+				// have the mouse update the view
+				controls.update();
+
+			}
+
+		</script>
+
+	</body>
+</html>
