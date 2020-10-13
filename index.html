@@ -22,10 +22,11 @@
 			"use strict";
 			var controls;
 			var camera, scene, renderer;
-			var mesh;
+			var mesh, meshsmall;
 			var key = [false, false, false, false];
 			var momentumX = 0, momentumY = 0, momentumZ = 0;
 			var ballx = 0,bally = 0, ballz = 0;
+			var direction = 0, momentumD = 0, momentumR = 0;
 			init();
 			animate();
 
@@ -38,7 +39,7 @@
 
 				scene = new THREE.Scene();
 				// add a ground plane
-				var geometry = new THREE.PlaneGeometry( 1000, 1000 );
+				var geometry = new THREE.PlaneGeometry( 3000, 3000 );
 				var texture = new THREE.TextureLoader().load( 'UV_Grid_Sm.jpg' );
 				var material = new THREE.MeshBasicMaterial( {map: texture, side: THREE.DoubleSide} );
 				var plane = new THREE.Mesh( geometry, material );
@@ -56,13 +57,16 @@
 				//var geometry = new THREE.BoxBufferGeometry( 200, 200, 200 );
 				// let's use a sphere instead of a box
 				var geometry = new THREE.SphereGeometry( 100, 64, 64 );
-
+				var geometrysmall = new THREE.SphereGeometry( 40, 64, 64 );
 				// material = new THREE.MeshBasicMaterial( { map: texture } );
 				// to have the lights affect the material, use Phong instead of Basic
 				material = new THREE.MeshBasicMaterial( { map: texture } );
 
 				mesh = new THREE.Mesh( geometry, material );
+				meshsmall = new THREE.Mesh( geometrysmall, material );
+				meshsmall.position.y = 95;
 				scene.add( mesh );
+				scene.add( meshsmall );
 
 				renderer = new THREE.WebGLRenderer();
 
@@ -136,26 +140,34 @@
 				if (key[0]){
 					//mesh.rotateOnWorldAxis(new THREE.Vector3(0, 0, 1),0.01);
 					//mesh.quaternion.slerp(new THREE.Quaternion().set( 0, 0, 1, 0 ).normalize(),0.01);
-					momentumX -= 0.3;
+					//momentumX -= 0.3;
+					//direction += 0.02;
+					momentumR += 0.001;
 				}
 				if (key[1]){
 					//mesh.quaternion.slerp(new THREE.Quaternion().set( 0, 0, 0, 1 ).normalize(),0.01);
-					momentumZ -= 0.3;
+					//momentumZ -= 0.3;
+					momentumX += Math.cos(direction)*0.1;
+					momentumZ -= Math.sin(direction)*0.1;
 				}
 				if (key[2]){
 					//mesh.quaternion.slerp(new THREE.Quaternion().set( 0, 1, 0, 0 ).normalize(),0.01);
-					momentumX += 0.3;
+					//momentumX += 0.3;
+					//direction -= 0.02;
+					momentumR -= 0.001;
 				}
 				if (key[3]){
 					//mesh.quaternion.slerp(new THREE.Quaternion().set( 0, -1, 0, 0 ).normalize(),0.01);
-					momentumZ += 0.3;
+					//momentumZ += 0.3;
+					momentumX -= Math.cos(direction)*0.1;
+					momentumZ += Math.sin(direction)*0.1;
 				}
 				
-				if (momentumX * momentumX > 100){
-					momentumX = 10 * (momentumX > 0 ? 1 : -1);
+				if (momentumX * momentumX > Math.cos(direction) * Math.cos(direction) * 100 ){
+					momentumX = Math.abs(Math.cos(direction)) * 10 * (momentumX > 0 ? 1 : -1);
 				}
-				if (momentumZ * momentumZ > 100){
-					momentumZ = 10 * (momentumZ > 0 ? 1 : -1);
+				if (momentumZ * momentumZ > Math.sin(direction) * Math.sin(direction) * 100 ){
+					momentumZ = Math.abs(Math.sin(direction)) * 10 * (momentumZ > 0 ? 1 : -1);
 				}
 				//mesh.position.x += momentumX;
 				//mesh.position.z += momentumZ;
@@ -166,8 +178,41 @@
 				ballz += momentumZ;
 				
 				mesh.position.x = 0;
-				mesh.position.y = 0;
+				mesh.position.y = 0; 
 				mesh.position.z = 0;
+				meshsmall.position.x = 0;
+				meshsmall.position.y = 0; 
+				meshsmall.position.z = 0;
+				
+				if (momentumX > 0 && Math.cos(direction) > 0 || momentumX < 0 && Math.cos(direction) < 0){
+					momentumX -= Math.cos(direction)*0.03;
+				}
+				else if (momentumX < 0 && Math.cos(direction) > 0 || momentumX > 0 && Math.cos(direction) < 0){
+					momentumX += Math.cos(direction)*0.03;
+				}
+				
+				if (momentumZ > 0 && Math.sin(direction) > 0 || momentumZ < 0 && Math.sin(direction) < 0){
+					momentumZ -= Math.sin(direction)*0.03;
+				}
+				else if (momentumZ < 0 && Math.sin(direction) > 0 || momentumZ > 0 && Math.sin(direction) < 0){
+					momentumZ += Math.sin(direction)*0.03;
+				}
+				
+				if (momentumR * momentumR < 0.00000016){
+					momentumR = 0;
+				}
+				else {
+					momentumR += 0.0004 * (momentumR > 0 ? -1 : 1);
+				}
+				
+				direction += momentumR;
+				/*
+				console.log(momentumX * momentumX + momentumZ * momentumZ);
+				if (momentumX * momentumX + momentumZ * momentumZ < 0.01){
+					momentumX = 0;
+					momentumZ = 0;
+				}*/
+				
 				/*
 				var rotation = new THREE.Matrix4().makeRotationZ(-momentumX/50);
 				var translation = new THREE.Matrix4().makeTranslation(0, 0, 0);
@@ -181,12 +226,14 @@
 				//transformation = translation.multiply(rotation);
 				mesh.applyMatrix(transformation);*/
 				mesh.applyMatrix(new THREE.Matrix4().makeRotationX(momentumZ/50));
-				
+				mesh.applyMatrix(new THREE.Matrix4().makeRotationY(-momentumR));
+				meshsmall.applyMatrix(new THREE.Matrix4().makeRotationY(momentumR));
+				//console.log(momentumR*50);
 				//mesh.makeRotationX(momentumZ/50);
 				//mesh.makeRotationZ(momentumX/50);
 				
 				
-				
+				/*
 				if (momentumX * momentumX < 0.04){
 					momentumX = 0;
 				}
@@ -199,13 +246,16 @@
 				}
 				else if (!key[1] && !key[3]) {
 					momentumZ += 0.3*(momentumZ > 0 ? -1 : 1);
-				}
+				}*/
 				
-				if (ballx * ballx > 250000){
-					ballx = 500*(ballx > 0 ? 1 : -1);
+				
+				
+				
+				if (ballx * ballx > 2250000){
+					ballx = 1500*(ballx > 0 ? 1 : -1);
 				}
-				if (ballz * ballz > 250000){
-					ballz = 500*(ballz > 0 ? 1 : -1);
+				if (ballz * ballz > 2250000){
+					ballz = 1500*(ballz > 0 ? 1 : -1);
 				}
 				
 				if (bally < 0 ){
@@ -215,6 +265,11 @@
 				mesh.position.x = ballx;
 				mesh.position.y = bally;
 				mesh.position.z = ballz;
+				
+				meshsmall.position.x = ballx;
+				meshsmall.position.y = bally+95;
+				meshsmall.position.z = ballz;
+
 				
 				// have our slider for intensity affect the lighting
 				//light.intensity = light2.intensity = light3.intensity = params.intensity;
