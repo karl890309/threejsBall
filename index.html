@@ -202,7 +202,7 @@
 					momentumR = 0;
 				}
 				else {
-					momentumR += 0.0004 * (momentumR > 0 ? -1 : 1);
+					momentumR += 0.0008 * (momentumR > 0 ? -1 : 1);
 				}
 				
 				direction += momentumR;
@@ -260,6 +260,7 @@
 				
 				if (bally < 0 ){
 					bally = 0;
+					momentumY = 0;
 				}
 				
 				mesh.position.x = ballx;
@@ -269,8 +270,12 @@
 				meshsmall.position.x = ballx;
 				meshsmall.position.y = bally+95;
 				meshsmall.position.z = ballz;
-
 				
+				camera.position.x += momentumX;
+				camera.position.y += momentumY;
+				camera.position.z += momentumZ;
+				//camera.lookAt(mesh.position);
+				controls.target.copy( mesh.position );
 				// have our slider for intensity affect the lighting
 				//light.intensity = light2.intensity = light3.intensity = params.intensity;
 
