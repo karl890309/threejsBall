@@ -22,7 +22,7 @@
 			"use strict";
 			var controls;
 			var camera, scene, renderer, camerainit = false;
-			var mesh;
+			var mesh,mesh1;
 			var key = [false, false, false, false];
 			var momentumX = 0, momentumY = 0, momentumZ = 0;
 			var ballx = 0,bally = 0, ballz = 0;
@@ -31,7 +31,7 @@
 			var velocity = 0;
 			var heading = 0;
 			var lastTime;
-			
+			var rota = 0;
 			var floor = new Set();
 			var locatString;
 			
@@ -80,14 +80,19 @@
 				//var geometry = new THREE.BoxBufferGeometry( 200, 200, 200 );
 				// let's use a sphere instead of a box
 				var geometry = new THREE.SphereGeometry( 50, 32, 16 );
-
+				
 				// material = new THREE.MeshBasicMaterial( { map: texture } );
 				// to have the lights affect the material, use Phong instead of Basic
 				material = new THREE.MeshBasicMaterial( { map: texture } );
 
 				mesh = new THREE.Mesh( geometry, material );
 				scene.add( mesh );
-
+				var geometry = new THREE.SphereGeometry( 25, 32, 16 );
+				mesh1 = new THREE.Mesh( geometry, material );
+				mesh1.position.y = 45;
+				scene.add( mesh1 );
+				
+				
 				renderer = new THREE.WebGLRenderer();
 
 				// set the background color to gray
@@ -188,9 +193,9 @@
 				}*/
 				
 				speed = Math.pow(momentumX * momentumX + momentumZ * momentumZ, 0.5);
-				if (speed > 500){
-					momentumX *= 500/speed;
-					momentumZ *= 500/speed;
+				if (speed > 500*params.addSpeed/15){
+					momentumX *= 500*params.addSpeed/15/speed;
+					momentumZ *= 500*params.addSpeed/15/speed;
 				}
 				
 				//mesh.position.x += momentumX;
@@ -204,9 +209,6 @@
 					params.Velocity = Math.pow( momentumX * momentumX + momentumZ * momentumZ, 0.5 );
 				}
 				
-				
-				
-				
 				ballx += momentumX*deltaTime/1000.0;
 				bally += momentumY*deltaTime/1000.0;
 				ballz += momentumZ*deltaTime/1000.0;
@@ -214,6 +216,8 @@
 				mesh.position.x = 0;
 				mesh.position.y = 0;
 				mesh.position.z = 0;
+				rota = params.Heading;
+				params.Heading = Math.atan2(momentumX,momentumZ) * 180 / Math.PI + 180;
 				/*
 				var rotation = new THREE.Matrix4().makeRotationZ(-momentumX/50);
 				var translation = new THREE.Matrix4().makeTranslation(0, 0, 0);
@@ -281,6 +285,7 @@
 					console.log("newfloor" + Math.floor((ballx+500)/1000)*1000 + " " + Math.floor((ballz+500)/1000)*1000)
 				}
 				//console.log(camera.position);
+				/*
 				if (params.FollowMe){
 					if (!camerainit){
 						camera.position.x = ballx;
@@ -293,19 +298,31 @@
 						camera.lookAt(mesh.position)
 						camera.position.x += momentumX*deltaTime/1000.0;
 						if (bally != 0){
-							camera.position.y += momentumY*deltaTime/1000.0;
+							//camera.position.y += momentumY*deltaTime/1000.0;
 						}
 						camera.position.z += momentumZ*deltaTime/1000.0;
 					}
 				}
 				else {
 					camerainit = false
-				}
-				
+				}*/
 				
 				mesh.position.x = ballx;
 				mesh.position.y = bally;
 				mesh.position.z = ballz;
+				mesh1.position.x = mesh.position.x;
+				mesh1.position.y = mesh.position.y+45;
+				mesh1.position.z = mesh.position.z;
+				
+				
+				mesh1.rotation.y = params.Heading/180*Math.PI;
+				
+				if (params.FollowMe){
+					camera.position.x = mesh.position.x;
+					camera.position.y = mesh.position.y+500;
+					camera.position.z = mesh.position.z+500;
+					camera.lookAt(mesh.position)
+				}
 				//console.log(ballx + " " + ballz);
 				
 				// have our slider for intensity affect the lighting
