@@ -21,7 +21,7 @@
 		<script>
 			"use strict";
 			var controls;
-			var camera, scene, renderer;
+			var camera, scene, renderer, camerainit = false;
 			var mesh;
 			var key = [false, false, false, false];
 			var momentumX = 0, momentumY = 0, momentumZ = 0;
@@ -280,7 +280,27 @@
 					scene.add( plane );
 					console.log("newfloor" + Math.floor((ballx+500)/1000)*1000 + " " + Math.floor((ballz+500)/1000)*1000)
 				}
-				
+				//console.log(camera.position);
+				if (params.FollowMe){
+					if (!camerainit){
+						camera.position.x = ballx;
+						camera.position.y = bally+500;
+						camera.position.z = ballz+500;
+						camerainit = true;
+						camera.lookAt(mesh.position)
+					}
+					else {
+						camera.lookAt(mesh.position)
+						camera.position.x += momentumX*deltaTime/1000.0;
+						if (bally != 0){
+							camera.position.y += momentumY*deltaTime/1000.0;
+						}
+						camera.position.z += momentumZ*deltaTime/1000.0;
+					}
+				}
+				else {
+					camerainit = false
+				}
 				
 				
 				mesh.position.x = ballx;
