@@ -31,7 +31,10 @@
 			var velocity = 0;
 			var heading = 0;
 			var lastTime;
-
+			
+			var floor = new Set();
+			var locatString;
+			
 			var gui, params;
 			var guiMe = function() {
 			  this.Heading = heading;
@@ -253,19 +256,37 @@
 					momentumZ -= momentumZ*deltaTime/1000.0;
 				}
 				
-				
+				/*
 				if (ballx * ballx > 250000){
 					ballx = 500*(ballx > 0 ? 1 : -1);
 				}
 				if (ballz * ballz > 250000){
 					ballz = 500*(ballz > 0 ? 1 : -1);
+				}*/
+				//console.log(locatString);
+				//console.log("newfloor" + Math.floor((ballx+500)/1000)*1000 + " " + Math.floor((ballz+500)/1000)*1000)
+				
+				locatString = Math.floor((ballx+500)/1000)*1000 + "" + Math.floor((ballz+500)/1000)*1000;
+				if (!floor.has(locatString)){
+					floor.add(locatString);
+					var geometry = new THREE.PlaneGeometry( 1000, 1000 );
+					var texture = new THREE.TextureLoader().load( 'UV_Grid_Sm.jpg' );
+					var material = new THREE.MeshBasicMaterial( {map: texture, side: THREE.DoubleSide} );
+					var plane = new THREE.Mesh( geometry, material );
+					plane.rotation.x = -Math.PI/2;
+					plane.position.y = -50.01;
+					plane.position.x = Math.floor((ballx+500)/1000)*1000;
+					plane.position.z = Math.floor((ballz+500)/1000)*1000;
+					scene.add( plane );
+					console.log("newfloor" + Math.floor((ballx+500)/1000)*1000 + " " + Math.floor((ballz+500)/1000)*1000)
 				}
+				
 				
 				
 				mesh.position.x = ballx;
 				mesh.position.y = bally;
 				mesh.position.z = ballz;
-				
+				//console.log(ballx + " " + ballz);
 				
 				// have our slider for intensity affect the lighting
 				//light.intensity = light2.intensity = light3.intensity = params.intensity;
