@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - geometry - cube</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				margin: 0px;
+				background-color: #000000;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+	<body>
+
+		<script src="three.js/build/three.js"></script>
+		<script src="js/controls/OrbitControls.js"></script>
+		<script src="js/libs/dat.gui.min.js"></script>
+
+		<script>
+			"use strict";
+			var controls;
+			var camera, scene, renderer, camerainit = false;
+			var mesh,mesh1,mesh2,mesh3;
+			var key = [false, false, false, false];
+			var key1 = [false, false, false, false];
+			var momentumX = 0, momentumY = 0, momentumZ = 0;
+			var momentumX1 = 0, momentumY1 = 0, momentumZ1 = 0;
+			var ballx = 0,bally = 0, ballz = 0;
+			var ballx1 = 120,bally1 = 0, ballz1 = 0;
+			var speed, limspeed, nojumpspeed;
+			var speed1, limspeed1, nojumpspeed1;
+			var jump = 0;
+			var jump1 = 0;
+			
+			var heading = 0;
+			var lastTime;
+			var rota = 0;
+			var rota1 = 0;
+			var floor = new Set();
+			var locatString;
+			
+			var gui, params, params1;
+			var guiMe = function() {
+			  this.Heading = heading;
+			  this.Velocity = 0;
+			  this.addSpeed = 15;
+			  this.rotSpeed = 15;
+			  this.Stop = function() {
+				momentumX = 0, momentumY = 0, momentumZ = 0;
+				this.Velocity = 0;
+			  };
+			  this.FollowMe = false;
+			};
+			
+			function degrees_to_radians(degrees)
+			{
+			  return degrees * (Math.PI/180);
+			}
+			
+			init();
+			lastTime = Date.now();
+			animate();
+			
+
+			function init() {
+
+				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 5000 );
+				camera.position.z = 500;
+				camera.position.y = 500;
+				camera.lookAt(0,0,0);
+
+				scene = new THREE.Scene();
+				// add a ground plane
+				var geometry = new THREE.PlaneGeometry( 1000, 1000 );
+				var texture = new THREE.TextureLoader().load( 'textures/UV_Grid_Sm.jpg' );
+				var material = new THREE.MeshBasicMaterial( {map: texture, side: THREE.DoubleSide} );
+				var plane = new THREE.Mesh( geometry, material );
+				plane.rotation.x = -Math.PI/2;
+				plane.position.y = -50.01;
+				//plane.rotation.z = Math.PI;
+				scene.add( plane );
+
+				// add XYZ axes, in RGB colors
+				scene.add( new THREE.AxisHelper( 200 ) );
+
+				//var texture = new THREE.TextureLoader().load( 'textures/crate.gif' );
+				// let's something other than the crate.gif
+				
+				//var geometry = new THREE.BoxBufferGeometry( 200, 200, 200 );
+				// let's use a sphere instead of a box
+				var geometry = new THREE.SphereGeometry( 50, 32, 16 );
+				
+				// material = new THREE.MeshBasicMaterial( { map: texture } );
+				// to have the lights affect the material, use Phong instead of Basic
+				texture = new THREE.TextureLoader().load( 'textures/BB8.jpg' );
+				material = new THREE.MeshBasicMaterial( { map: texture } );
+
+				mesh = new THREE.Mesh( geometry, material );
+				scene.add( mesh );
+
+				mesh2 = new THREE.Mesh( geometry, material );
+				mesh2.position.x = 120;
+				scene.add( mesh2 );
+				
+				
+				var geometry = new THREE.SphereGeometry( 25, 32, 16 );
+				texture = new THREE.TextureLoader().load( 'textures/BB8-Head.jpg' );
+				material = new THREE.MeshBasicMaterial( { map: texture } );
+				mesh1 = new THREE.Mesh( geometry, material );
+				mesh1.position.y = 45;
+				mesh1.rotation.y = Math.PI/2;
+				scene.add( mesh1 );
+				
+				mesh3 = new THREE.Mesh( geometry, material );
+				mesh3.position.y = 45;
+				mesh3.rotation.y = Math.PI/2;
+				mesh3.position.x = 120;
+				scene.add( mesh3 );
+				
+				
+				renderer = new THREE.WebGLRenderer();
+
+				// set the background color to gray
+				renderer.setClearColor( 0xa0a0a0 );
+
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				document.body.appendChild( renderer.domElement );
+
+				// let's have the mouse affect the view
+				controls = new THREE.OrbitControls( camera, renderer.domElement );
+				controls.enableKeys = false;
+				//
+
+				window.addEventListener("resize", onWindowResize, false );
+				window.addEventListener("keydown", keyDown, false);
+				window.addEventListener("keyup", keyUp, false);
+
+				// add some sliders
+				params = new guiMe();
+				params1 = new guiMe();
+				gui = new dat.GUI();
+
+				gui.add(params, 'Heading').listen();
+				gui.add(params, 'Velocity').listen();
+				gui.add(params, 'addSpeed', 0, 30);
+				gui.add(params, 'rotSpeed', 0, 30);
+				gui.add(params, 'Stop');
+				gui.add(params, 'FollowMe');
+				gui.open();
+			}
+			
+			function keyDown(e){
+				console.log(e.key, e.keyCode);
+				if (e.keyCode >= 37 && e.keyCode <= 40){
+					key[e.keyCode - 37] = true;
+				}
+				else if (e.keyCode == 32){
+					if (jump < 2){
+						momentumY = 1000;
+						jump += 1;
+					}
+				}
+				else if (e.keyCode == 17){
+					if (jump1 < 2){
+						momentumY1 = 1000;
+						jump1 += 1;
+					}
+				}
+				else if (e.keyCode == 65){
+					key1[0] = true;
+				}
+				else if (e.keyCode == 87){
+					key1[1] = true;
+				}
+				else if (e.keyCode == 68){
+					key1[2] = true;
+				}
+				else if (e.keyCode == 83){
+					key1[3] = true;
+				}
+				
+			}
+			function keyUp(e){
+				console.log(e.key, e.keyCode);
+				if (e.keyCode >= 37 && e.keyCode <= 40){
+					key[e.keyCode - 37] = false;
+				}
+				else if (e.keyCode == 65){
+					key1[0] = false;
+				}
+				else if (e.keyCode == 87){
+					key1[1] = false;
+				}
+				else if (e.keyCode == 68){
+					key1[2] = false;
+				}
+				else if (e.keyCode == 83){
+					key1[3] = false;
+				}
+				
+			}
+			
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+			
+			
+			function animate() {
+
+				requestAnimationFrame( animate );
+				var deltaTime = Date.now() - lastTime;
+				lastTime = Date.now();
+				// auto-rotation at start - turn it off
+				//mesh.rotation.x += 0.005;
+				//mesh.rotation.y += 0.01;
+				/*
+				var quaternion = new THREE.Quaternion();
+				quaternion.setFromAxisAngle( new THREE.Vector3( 0, 1, 0 ), 0.01);
+
+				var vector = new THREE.Vector3( 0, 1, 0 );
+				vector.applyQuaternion( quaternion );*/
+				
+				if (key[0] && bally == 0){
+					//mesh.rotateOnWorldAxis(new THREE.Vector3(0, 0, 1),0.01);
+					//mesh.quaternion.slerp(new THREE.Quaternion().set( 0, 0, 1, 0 ).normalize(),0.01);
+					momentumX -= params.addSpeed*50*deltaTime/1000.0;
+				}
+				if (key[1] && bally == 0){
+					//mesh.quaternion.slerp(new THREE.Quaternion().set( 0, 0, 0, 1 ).normalize(),0.01);
+					momentumZ -= params.addSpeed*50*deltaTime/1000.0;
+				}
+				if (key[2] && bally == 0){
+					//mesh.quaternion.slerp(new THREE.Quaternion().set( 0, 1, 0, 0 ).normalize(),0.01);
+					momentumX += params.addSpeed*50*deltaTime/1000.0;
+				}
+				if (key[3] && bally == 0){
+					//mesh.quaternion.slerp(new THREE.Quaternion().set( 0, -1, 0, 0 ).normalize(),0.01);
+					momentumZ += params.addSpeed*50*deltaTime/1000.0;
+				}
+				/*
+				if (momentumX * momentumX > 100){
+					momentumX = 10 * (momentumX > 0 ? 1 : -1);
+				}
+				if (momentumZ * momentumZ > 100){
+					momentumZ = 10 * (momentumZ > 0 ? 1 : -1);
+				}*/
+				
+				speed = Math.pow(momentumX * momentumX + momentumZ * momentumZ, 0.5);
+				if (speed > 500*params.addSpeed/15){
+					momentumX *= 500*params.addSpeed/15/speed;
+					momentumZ *= 500*params.addSpeed/15/speed;
+				}
+				
+				//mesh.position.x += momentumX;
+				//mesh.position.z += momentumZ;
+				momentumY += -9.8*deltaTime/5;
+				nojumpspeed = Math.pow( momentumX * momentumX + momentumZ * momentumZ, 0.5 );
+				if (bally != 0){
+					params.Velocity = Math.pow( momentumX * momentumX + momentumZ * momentumZ + momentumY * momentumY, 0.5 );
+				}
+				else {
+					params.Velocity = Math.pow( momentumX * momentumX + momentumZ * momentumZ, 0.5 );
+					if (momentumY < 0){
+						jump = 0;
+					}
+				}
+				
+				
+				ballx += momentumX*deltaTime/1000.0;
+				ballz += momentumZ*deltaTime/1000.0;
+				if ((ballx-mesh2.position.x)*(ballx-mesh2.position.x) + (ballz-mesh2.position.z)*(ballz-mesh2.position.z) < 10000){
+					ballx -= momentumX*deltaTime/1000.0;
+					ballz -= momentumZ*deltaTime/1000.0;
+				}
+				//ballx += momentumX*deltaTime/1000.0;
+				bally += momentumY*deltaTime/1000.0;
+				//ballz += momentumZ*deltaTime/1000.0;
+				
+				rota = params.Heading;
+				params.Heading = Math.atan2(momentumX,momentumZ) * 180 / Math.PI + 180;
+				/*
+				var rotation = new THREE.Matrix4().makeRotationZ(-momentumX/50);
+				var translation = new THREE.Matrix4().makeTranslation(0, 0, 0);
+				var transformation = rotation.multiply(translation);
+				mesh.applyMatrix(transformation);*/
+				mesh.applyMatrix(new THREE.Matrix4().makeRotationZ(-momentumX/500*(params.rotSpeed*deltaTime/1000.0)));
+				/*
+				rotation = new THREE.Matrix4().makeRotationX(momentumZ/50);
+				translation = new THREE.Matrix4().makeTranslation(0, 0, 0);
+				transformation = rotation.multiply(translation);
+				//transformation = translation.multiply(rotation);
+				mesh.applyMatrix(transformation);*/
+				mesh.applyMatrix(new THREE.Matrix4().makeRotationX(momentumZ/500*(params.rotSpeed*deltaTime/1000.0)));
+				
+				
+				//mesh.makeRotationX(momentumZ/50);
+				//mesh.makeRotationZ(momentumX/50);
+				
+				if (bally < 0 ){
+					bally = 0;
+				}
+				/*
+				if (!key[0] && !key[2] && !key[1] && !key[3] && bally == 0){
+					if (momentumX * momentumX < 0.04){
+						momentumX = 0;
+					}
+					else {
+						momentumX += 0.2*(momentumX > 0 ? -1 : 1);
+					}
+					
+					if (momentumZ * momentumZ < 0.04){
+						momentumZ = 0;
+					}
+					else {
+						momentumZ += 0.2*(momentumZ > 0 ? -1 : 1);
+					}
+				}*/
+				if (!key[0] && !key[2] && !key[1] && !key[3] && bally == 0){
+					momentumX -= momentumX*deltaTime/1000.0;
+					momentumZ -= momentumZ*deltaTime/1000.0;
+				}
+				
+				/*
+				if (ballx * ballx > 250000){
+					ballx = 500*(ballx > 0 ? 1 : -1);
+				}
+				if (ballz * ballz > 250000){
+					ballz = 500*(ballz > 0 ? 1 : -1);
+				}*/
+				//console.log(locatString);
+				//console.log("newfloor" + Math.floor((ballx+500)/1000)*1000 + " " + Math.floor((ballz+500)/1000)*1000)
+				
+				locatString = Math.floor((ballx+500)/1000)*1000 + "" + Math.floor((ballz+500)/1000)*1000;
+				if (!floor.has(locatString)){
+					floor.add(locatString);
+					var geometry = new THREE.PlaneGeometry( 1000, 1000 );
+					var texture = new THREE.TextureLoader().load( 'textures/UV_Grid_Sm.jpg' );
+					var material = new THREE.MeshBasicMaterial( {map: texture, side: THREE.DoubleSide} );
+					var plane = new THREE.Mesh( geometry, material );
+					plane.rotation.x = -Math.PI/2;
+					plane.position.y = -50.01;
+					plane.position.x = Math.floor((ballx+500)/1000)*1000;
+					plane.position.z = Math.floor((ballz+500)/1000)*1000;
+					scene.add( plane );
+					//console.log("newfloor" + Math.floor((ballx+500)/1000)*1000 + " " + Math.floor((ballz+500)/1000)*1000);
+				}
+				//console.log(camera.position);
+				/*
+				if (params.FollowMe){
+					if (!camerainit){
+						camera.position.x = ballx;
+						camera.position.y = bally+500;
+						camera.position.z = ballz+500;
+						camerainit = true;
+						camera.lookAt(mesh.position)
+					}
+					else {
+						camera.lookAt(mesh.position)
+						camera.position.x += momentumX*deltaTime/1000.0;
+						if (bally != 0){
+							//camera.position.y += momentumY*deltaTime/1000.0;
+						}
+						camera.position.z += momentumZ*deltaTime/1000.0;
+					}
+				}
+				else {
+					camerainit = false
+				}*/
+				
+				//console.log((ballx-mesh2.position.x)*(ballx-mesh2.position.x) + (ballz-mesh2.position.z)*(ballz-mesh2.position.z));
+				/*if ((ballx-mesh2.position.x)*(ballx-mesh2.position.x) + (ballz-mesh2.position.z)*(ballz-mesh2.position.z) > 10000){
+					mesh.position.x = ballx;
+					mesh.position.z = ballz;
+				}
+				else {
+					ballx = mesh.position.x;
+					ballz = mesh.position.z;
+				}
+				*/
+				mesh.position.x = ballx;
+				mesh.position.z = ballz;
+				mesh.position.y = bally;
+				
+				if (params.addSpeed){
+					var xz = 45*Math.sin(degrees_to_radians(nojumpspeed/(500*params.addSpeed/15)*15));
+					mesh1.position.x = mesh.position.x+xz*Math.cos(degrees_to_radians(params.Heading+90));
+					mesh1.position.y = mesh.position.y+45*Math.cos(degrees_to_radians(nojumpspeed/(500*params.addSpeed/15)*15));
+					mesh1.position.z = mesh.position.z-xz*Math.sin(degrees_to_radians(params.Heading+90));
+					
+					mesh1.rotation.z = -degrees_to_radians(nojumpspeed/(500*params.addSpeed/15)*15);
+					mesh1.rotation.y = degrees_to_radians(params.Heading+90);
+				}
+				else {
+					mesh1.position.x = mesh.position.x;
+					mesh1.position.y = mesh.position.y+45;
+					mesh1.position.z = mesh.position.z;
+					mesh1.rotation.z = 0;
+				}
+				
+				
+				if (key1[0] && bally1 == 0){
+					momentumX1 -= params1.addSpeed*50*deltaTime/1000.0;
+				}
+				if (key1[1] && bally1 == 0){
+					momentumZ1 -= params1.addSpeed*50*deltaTime/1000.0;
+				}
+				if (key1[2] && bally1 == 0){
+					momentumX1 += params1.addSpeed*50*deltaTime/1000.0;
+				}
+				if (key1[3] && bally1 == 0){
+					momentumZ1 += params1.addSpeed*50*deltaTime/1000.0;
+				}
+				speed1 = Math.pow(momentumX1 * momentumX1 + momentumZ1 * momentumZ1, 0.5);
+				if (speed1 > 500*params1.addSpeed/15){
+					momentumX1 *= 500*params1.addSpeed/15/speed1;
+					momentumZ1 *= 500*params1.addSpeed/15/speed1;
+				}
+				momentumY1 += -9.8*deltaTime/5;
+				nojumpspeed1 = Math.pow( momentumX1 * momentumX1 + momentumZ1 * momentumZ1, 0.5 );
+				if (bally1 != 0){
+					params1.Velocity = Math.pow( momentumX1 * momentumX1 + momentumZ1 * momentumZ1 + momentumY1 * momentumY1, 0.5 );
+				}
+				else {
+					params1.Velocity = Math.pow( momentumX1 * momentumX1 + momentumZ1 * momentumZ1, 0.5 );
+					if (momentumY1 < 0){
+						jump1 = 0;
+					}
+				}
+				
+				
+				ballx1 += momentumX1*deltaTime/1000.0;
+				ballz1 += momentumZ1*deltaTime/1000.0;
+				if ((ballx1-mesh.position.x)*(ballx1-mesh.position.x) + (ballz1-mesh.position.z)*(ballz1-mesh.position.z) < 10000){
+					ballx1 -= momentumX1*deltaTime/1000.0;
+					ballz1 -= momentumZ1*deltaTime/1000.0;
+				}
+				bally1 += momentumY1*deltaTime/1000.0;
+				
+				rota1 = params1.Heading;
+				params1.Heading = Math.atan2(momentumX1,momentumZ1) * 180 / Math.PI + 180;
+				mesh2.applyMatrix(new THREE.Matrix4().makeRotationZ(-momentumX1/500*(params1.rotSpeed*deltaTime/1000.0)));
+				mesh2.applyMatrix(new THREE.Matrix4().makeRotationX(momentumZ1/500*(params1.rotSpeed*deltaTime/1000.0)));
+				if (bally1 < 0 ){
+					bally1 = 0;
+				}
+				if (!key1[0] && !key1[2] && !key1[1] && !key1[3] && bally1 == 0){
+					momentumX1 -= momentumX1*deltaTime/1000.0;
+					momentumZ1 -= momentumZ1*deltaTime/1000.0;
+				}
+
+				locatString = Math.floor((ballx1+500)/1000)*1000 + "" + Math.floor((ballz1+500)/1000)*1000;
+				if (!floor.has(locatString)){
+					floor.add(locatString);
+					var geometry = new THREE.PlaneGeometry( 1000, 1000 );
+					var texture = new THREE.TextureLoader().load( 'textures/UV_Grid_Sm.jpg' );
+					var material = new THREE.MeshBasicMaterial( {map: texture, side: THREE.DoubleSide} );
+					var plane = new THREE.Mesh( geometry, material );
+					plane.rotation.x = -Math.PI/2;
+					plane.position.y = -50.01;
+					plane.position.x = Math.floor((ballx1+500)/1000)*1000;
+					plane.position.z = Math.floor((ballz1+500)/1000)*1000;
+					scene.add( plane );
+				}
+				mesh2.position.x = ballx1;
+				mesh2.position.z = ballz1;
+				mesh2.position.y = bally1;
+				
+				if (params1.addSpeed){
+					var xz = 45*Math.sin(degrees_to_radians(nojumpspeed1/(500*params1.addSpeed/15)*15));
+					mesh3.position.x = mesh2.position.x+xz*Math.cos(degrees_to_radians(params1.Heading+90));
+					mesh3.position.y = mesh2.position.y+45*Math.cos(degrees_to_radians(nojumpspeed1/(500*params1.addSpeed/15)*15));
+					mesh3.position.z = mesh2.position.z-xz*Math.sin(degrees_to_radians(params1.Heading+90));
+					
+					mesh3.rotation.z = -degrees_to_radians(nojumpspeed1/(500*params1.addSpeed/15)*15);
+					mesh3.rotation.y = degrees_to_radians(params1.Heading+90);
+				}
+				else {
+					mesh3.position.x = mesh2.position.x;
+					mesh3.position.y = mesh2.position.y+45;
+					mesh3.position.z = mesh2.position.z;
+					mesh3.rotation.z = 0;
+				}
+				if (params.FollowMe){
+					camera.position.x = mesh.position.x;
+					camera.position.y = mesh.position.y+500;
+					camera.position.z = mesh.position.z+500;
+					camera.lookAt(mesh.position)
+				}
+				
+				
+				//console.log(params.addSpeed);
+				
+				// have our slider for intensity affect the lighting
+				//light.intensity = light2.intensity = light3.intensity = params.intensity;
+
+				renderer.render( scene, camera );
+				// have the mouse update the view
+				controls.update();
+
+			}
+
+		</script>
+
+	</body>
+</html>
