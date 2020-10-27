@@ -498,11 +498,11 @@
 				}
 				else {
 					if (isfollow){
-						controls.target.set( mesh.position );
+						controls.target.set( mesh.position.x,mesh.position.y,mesh.position.z );
 						camera.position.x = mesh.position.x;
 						camera.position.y = mesh.position.y+500;
 						camera.position.z = mesh.position.z+500;
-						camera.lookAt(mesh.position.x,mesh.position.y,mesh.position.z);
+						camera.lookAt(mesh.position);
 					}
 				}
 				isfollow = params.FollowMe;
