@@ -33,6 +33,7 @@
 			var speed1, limspeed1, nojumpspeed1;
 			var jump = 0;
 			var jump1 = 0;
+			var isfollow;
 			
 			var heading = 0;
 			var lastTime;
@@ -493,9 +494,14 @@
 					camera.position.y = mesh.position.y+500;
 					camera.position.z = mesh.position.z+500;
 					camera.lookAt(mesh.position)
-					controls.target.set( mesh.position );
+					
 				}
-				
+				else {
+					if (isfollow){
+						controls.target.set( mesh.position );
+					}
+				}
+				isfollow = params.FollowMe;
 				
 				//console.log(params.addSpeed);
 				
