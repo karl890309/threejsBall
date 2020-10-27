@@ -502,7 +502,7 @@
 						camera.position.x = mesh.position.x;
 						camera.position.y = mesh.position.y+500;
 						camera.position.z = mesh.position.z+500;
-						camera.lookAt(mesh.position)
+						camera.lookAt(mesh.position.x,mesh.position.y,mesh.position.z);
 					}
 				}
 				isfollow = params.FollowMe;
